@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chat Application</title>
+    <style>
+        html{
+            height: 100%;
+            width: 100%;
+            
+        }
+    
+       ul{
+        list-style: none;
+        padding: 0%;
+        margin: 0px;
+       }
+       .joined{
+        color: green;
+       }
+       .left{
+        color: red;
+       }
+       body{
+        width: 100%;
+        height:100%;
+        margin: 0px;
+            padding: 0px;
+        display: flex;
+        flex-direction: column;
+        justify-content: flex-end;
+        align-items: center;
+        
+
+       }
+       .content{
+        width: 30%;
+        height: 100%;
+        background-color: rgb(193, 232, 246);
+        padding: 5%;
+        margin: 20px;
+        display: flex;
+        flex-direction:column;
+        justify-content: flex-end;
+        overflow-y: auto;
+        gap: 20px;
+       }
+       #message {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+       
+       }
+       .my-message {
+    color: white;
+    font-weight: bold;
+    text-align: right;
+    background-color: rgb(97, 240, 97);
+    padding: 5px;
+}
+
+.other-message {
+    color: white;
+    text-align: left;
+    background-color: rgb(94, 90, 90);
+    padding: 5px;
+}
+.mes{
+    height: 100%;
+    overflow-y: auto;
+}
+.mes::-webkit-scrollbar {
+  display: none;             
+}
+    </style>
+</head>
+<body>
+    <div class="content">
+    <div class="mes"> <ul id="message"></ul> </div>
+    <input type="text" id="messageInput" placeholder="type your messgae"/>
+    <button id="sendBtn"> Send </button>
+</div>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+    <script>
+        
+        const socket=io("http://localhost:3002");
+        let mySocketId = null;
+        const messsageInput=document.getElementById("messageInput");
+        const sendBtn=document.getElementById("sendBtn");
+        const messagesList=document.getElementById("message");
+
+        socket.on('connect', () => {
+        mySocketId = socket.id;
+        socket.on("message", (data) => {
+        const isMyMessage = data.senderId === mySocketId;
+        console.log("My Socket ID:", mySocketId);
+console.log("Sender ID:", data.senderId);
+        const messageClass = isMyMessage ? "my-message" : "other-message";
+        addMessage(`${data.username}: ${data.message}`, messageClass);
+    });
+            });
+
+        function addMessage(message,className){
+            const li=document.createElement("li");
+            li.textContent=message;
+            
+            
+            if(className){
+                li.classList.add(className);
+            }
+            
+            messagesList.appendChild(li);
+            const chatContainer = document.querySelector(".mes");
+            if (chatContainer) {
+   
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+        }
+    
+         socket.on("user-joined",(data)=>{
+            addMessage(data.message,"joined");
+         });
+         socket.on("user-left",(data)=>{
+            addMessage(data.message,"left");
+         });
+         sendBtn.addEventListener("click",()=>{
+            const message=messsageInput.value.trim();
+            if(message!==""){
+                console.log(message);
+                socket.emit("newMessage",{message,username:socket.id});
+                messageInput.value="";
+            }
+
+         });
+         socket.on("connect",()=>{
+            addMessage("you have joined the chat !!!");
+         })
+
+    </script>
+</body>
+</html>
